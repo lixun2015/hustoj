@@ -75,13 +75,38 @@
 struct user_regs_struct {
         long uregs[18];
 };
-
 #define ARM_r7          uregs[7]
 #define ARM_ORIG_r0     uregs[17]
 
 #define REG_SYSCALL ARM_r7
-
 #endif
+
+#ifdef __aarch64__
+#define NT_PRSTATUS	1
+#define NT_ARM_SYSTEM_CALL	0x404
+#define ARM_cpsr	uregs[16]
+#define ARM_pc		uregs[15]
+#define ARM_lr		uregs[14]
+#define ARM_sp		uregs[13]
+#define ARM_ip		uregs[12]
+#define ARM_fp		uregs[11]
+#define ARM_r10		uregs[10]
+#define ARM_r9		uregs[9]
+#define ARM_r8		regs[8]
+#define ARM_r7		uregs[7]
+#define ARM_r6		uregs[6]
+#define ARM_r5		uregs[5]
+#define ARM_r4		uregs[4]
+#define ARM_r3		uregs[3]
+#define ARM_r2		uregs[2]
+#define ARM_r1		uregs[1]
+#define ARM_r0		uregs[0]
+#define ARM_ORIG_r0	uregs[17]
+#define PTRACE_GETREGS PTRACE_GETREGSET
+#define PTRACE_SETREGS PTRACE_SETREGSET
+#define REG_SYSCALL regs[18]
+
+#endif 
 
 #ifdef __mips__
 typedef unsigned long long uint64_t;
@@ -135,6 +160,8 @@ static int sim_enable = 0;
 static int oi_mode = 0;
 static int full_diff = 0;
 static int use_max_time = 0;
+static int time_limit_to_total= 0;
+static int total_time= 0;
 
 static int http_judge = 0;
 static char http_baseurl[BUFFER_SIZE];
@@ -160,10 +187,16 @@ static int py2=1; // caution: py2=1 means default using py3
 #ifdef _mysql_h
 MYSQL *conn;
 #endif
-
+static char jresult[14][4]={"PD","PR","CI","RJ","AC","PE","WA","TLE","MLE","OLE","RE","CE","CO","TR"};
 static char lang_ext[21][8] = {"c", "cc", "pas", "java", "rb", "sh", "py",
 			       "php", "pl", "cs", "m", "bas", "scm", "c", "cc", "lua", "js", "go","sql","f95","m"};
 //static char buf[BUFFER_SIZE];
+void print_arm_regs(long long unsigned int *d){
+	for(int i=0;i<32;i++){
+		printf("[%d]:%lld ",i,d[i]%CALL_ARRAY_SIZE);
+	}
+	printf("\n");
+}
 int data_list_has(char *file)
 {
 	for (int i = 0; i < data_list_len; i++)
@@ -347,7 +380,13 @@ void init_syscalls_limits(int lang)
 		for (i = 0; i == 0 || LANG_MV[i]; i++)
 			call_counter[LANG_MV[i]] = HOJ_MAX_LIMIT;
 	}
+#ifdef __aarch64__
+	if (lang==3)call_counter[220]= 100;
+	else call_counter[220]= 1;
+#else
 	call_counter[SYS_execve]= 1;
+#endif
+	printf("SYS_execve:%d\n",SYS_execve);
 }
 
 int after_equal(char *c)
@@ -452,6 +491,7 @@ void init_mysql_conf()
 			read_int(buf, "OJ_FULL_DIFF", &full_diff);
 			read_int(buf, "OJ_SHM_RUN", &shm_run);
 			read_int(buf, "OJ_USE_MAX_TIME", &use_max_time);
+			read_int(buf, "OJ_TIME_LIMIT_TO_TOTAL", &time_limit_to_total);
 			read_int(buf, "OJ_USE_PTRACE", &use_ptrace);
 			read_int(buf, "OJ_COMPILE_CHROOT", &compile_chroot);
 			read_int(buf, "OJ_TURBO_MODE", &turbo_mode);
@@ -1110,13 +1150,14 @@ void _update_problem_mysql(int p_id,int cid) {
 		if (mysql_real_query(conn, sql, strlen(sql)))
 			write_log(mysql_error(conn));
 	}
-		sprintf(sql,
+	/*	sprintf(sql,
 			"UPDATE `problem` SET `submit`=(SELECT count(*) FROM `solution` WHERE `problem_id`=%d) WHERE `problem_id`=%d",
 			p_id, p_id);
 
 	
 	if (mysql_real_query(conn, sql, strlen(sql)))
 		write_log(mysql_error(conn));
+	*/
 }
 #endif
 void update_problem(int pid,int cid) {
@@ -1194,15 +1235,15 @@ int compile(int lang, char *work_dir)
 	if (pid == 0)
 	{
 		struct rlimit LIM;
-		int cpu = 6;
+		int cpu = 20;
 		if (lang == 3)
 			cpu = 30;
 		LIM.rlim_max = cpu;
 		LIM.rlim_cur = cpu;
 		setrlimit(RLIMIT_CPU, &LIM);
 		alarm(cpu);
-		LIM.rlim_max = 40 * STD_MB;
-		LIM.rlim_cur = 40 * STD_MB;
+		LIM.rlim_max = 100 * STD_MB;
+		LIM.rlim_cur = 100 * STD_MB;
 		setrlimit(RLIMIT_FSIZE, &LIM);
 
 		if (lang == 3 || lang == 17)
@@ -1226,8 +1267,8 @@ int compile(int lang, char *work_dir)
 		}
 		else
 		{
-			LIM.rlim_max = STD_MB * 512;
-			LIM.rlim_cur = STD_MB * 512;
+			LIM.rlim_max = STD_MB << 11 ;
+			LIM.rlim_cur = STD_MB << 11;
 		}
 		if (lang != 3)
 			setrlimit(RLIMIT_AS, &LIM);
@@ -1608,7 +1649,7 @@ void get_solution_info(int solution_id, int & p_id, char * user_id,
 }
 
 #ifdef _mysql_h
-void _get_problem_info_mysql(int p_id, int &time_lmt, int &mem_lmt,
+void _get_problem_info_mysql(int p_id, double &time_lmt, int &mem_lmt,
 							 int &isspj)
 {
 	// get the problem info from Table:problem
@@ -1621,7 +1662,7 @@ void _get_problem_info_mysql(int p_id, int &time_lmt, int &mem_lmt,
 	mysql_real_query(conn, sql, strlen(sql));
 	res = mysql_store_result(conn);
 	row = mysql_fetch_row(res);
-	time_lmt = atoi(row[0]);
+	time_lmt = atof(row[0]);
 	mem_lmt = atoi(row[1]);
 	isspj = (row[2][0] == '1');
 	if (res != NULL)
@@ -1631,7 +1672,7 @@ void _get_problem_info_mysql(int p_id, int &time_lmt, int &mem_lmt,
 	}
 }
 #endif
-void _get_problem_info_http(int p_id, int &time_lmt, int &mem_lmt,
+void _get_problem_info_http(int p_id, double &time_lmt, int &mem_lmt,
 							int &isspj)
 {
 	//login();
@@ -1639,13 +1680,14 @@ void _get_problem_info_http(int p_id, int &time_lmt, int &mem_lmt,
 	const char *cmd =
 		"wget --post-data=\"getprobleminfo=1&pid=%d\" --load-cookies=cookie --save-cookies=cookie --keep-session-cookies -q -O - \"%s/admin/problem_judge.php\"";
 	FILE *pout = read_cmd_output(cmd, p_id, http_baseurl);
-	fscanf(pout, "%d", &time_lmt);
+	fscanf(pout, "%lf", &time_lmt);
 	fscanf(pout, "%d", &mem_lmt);
 	fscanf(pout, "%d", &isspj);
 	pclose(pout);
+	if(DEBUG) printf("time_lmt:%g\n",time_lmt);
 }
 
-void get_problem_info(int p_id, int &time_lmt, int &mem_lmt, int &isspj)
+void get_problem_info(int p_id, double &time_lmt, int &mem_lmt, int &isspj)
 {
 	if (http_judge)
 	{
@@ -2121,7 +2163,7 @@ void copy_js_runtime(char *work_dir)
 #endif
 	execute_cmd("/bin/cp /usr/bin/nodejs %s/", work_dir);
 }
-void run_solution(int &lang, char *work_dir, int &time_lmt, int &usedtime,
+void run_solution(int &lang, char *work_dir, double &time_lmt, int &usedtime,
 				  int &mem_lmt)
 {
 	nice(19);
@@ -2138,8 +2180,7 @@ void run_solution(int &lang, char *work_dir, int &time_lmt, int &usedtime,
 	freopen("user.out", "w", stdout);
 	freopen("error.out", "a+", stderr);
 	// trace me
-	if (use_ptrace)
-		ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+	ptrace(PTRACE_TRACEME, 0, NULL, NULL);
 	// run me
 	if (lang != 3 && lang!=20
 #ifdef __mips__
@@ -2161,15 +2202,15 @@ void run_solution(int &lang, char *work_dir, int &time_lmt, int &usedtime,
 	// set the limit
 	struct rlimit LIM; // time limit, file limit& memory limit
 	// time limit
-	if (oi_mode)
-		LIM.rlim_cur = time_lmt / cpu_compensation + 1;
+	if (time_limit_to_total)
+		LIM.rlim_cur = (time_lmt / cpu_compensation - usedtime / 1000.0f) + 1;
 	else
-		LIM.rlim_cur = (time_lmt / cpu_compensation - usedtime / 1000) + 1;
+		LIM.rlim_cur = time_lmt / cpu_compensation + 1;
 	LIM.rlim_max = LIM.rlim_cur;
 	//if(DEBUG) printf("LIM_CPU=%d",(int)(LIM.rlim_cur));
 	setrlimit(RLIMIT_CPU, &LIM);
 	alarm(0);
-	alarm(time_lmt * 5 / cpu_compensation);
+	alarm(1+ time_lmt / cpu_compensation);
 
 	// file limit
 	LIM.rlim_max = STD_F_LIM + STD_MB;
@@ -2180,9 +2221,9 @@ void run_solution(int &lang, char *work_dir, int &time_lmt, int &usedtime,
 	{
 	case 17:
 	case 9: //C#
-		LIM.rlim_cur = LIM.rlim_max = 280;
-		break;
 	case 3: //java
+		LIM.rlim_cur = LIM.rlim_max = 880;
+		break;
 	case 4: //ruby
 	case 6:  //python
 	case 12:
@@ -2386,7 +2427,7 @@ int special_judge(char *oj_home, int problem_id, char *infile, char *outfile,
 	}
 	return ret;
 }
-void judge_solution(int &ACflg, int &usedtime, int time_lmt, int isspj,
+void judge_solution(int &ACflg, int &usedtime, double time_lmt, int isspj,
 					int p_id, char *infile, char *outfile, char *userfile, int &PEflg,
 					int lang, char *work_dir, int &topmemory, int mem_lmt,
 					int solution_id, int num_of_test)
@@ -2395,8 +2436,23 @@ void judge_solution(int &ACflg, int &usedtime, int time_lmt, int isspj,
 	int comp_res;
 	if (!oi_mode)
 		num_of_test = 1.0;
-	if (ACflg == OJ_AC && usedtime > time_lmt * 1000 * (use_max_time ? 1 : num_of_test))
-		ACflg = OJ_TL;
+	
+	if (ACflg == OJ_AC){
+		int real_limit=1000;
+		if(time_limit_to_total){                 // 如果限制总时间
+			real_limit=time_lmt*1000;
+			if(total_time>real_limit) ACflg = OJ_TL;   // 总时间超过
+			if(usedtime> real_limit) ACflg = OJ_TL;    // 单点超过
+		}else if(num_of_test>0){                        // 如果数据点不为0，且限制单点时间
+			real_limit=num_of_test*time_lmt*1000;
+			//if(total_time>real_limit) ACflg = OJ_TL;  //总时间超过测试点数*限制
+			if(usedtime> time_lmt*1000) ACflg = OJ_TL; // 单点超过限制
+		}else{                                            //测试数为0 ，这种情况不应该出现，但给出，作为保险。
+			real_limit=time_lmt*1000; // fallback
+			if(usedtime > real_limit) ACflg = OJ_TL;
+			if(total_time>real_limit) ACflg = OJ_TL;
+		}
+	}
 	if (topmemory > mem_lmt * STD_MB)
 		ACflg = OJ_ML; //issues79
 	// compare
@@ -2454,10 +2510,10 @@ int get_page_fault_mem(struct rusage &ruse, pid_t &pidApp)
 	}
 	return m_minflt;
 }
-void print_runtimeerror(char *err)
+void print_runtimeerror(char* infile,char *err)
 {
 	FILE *ferr = fopen("error.out", "a+");
-	fprintf(ferr, "Runtime Error:%s\n", err);
+	fprintf(ferr, "%s:%s\n",infile, err);
 	fclose(ferr);
 }
 void clean_session(pid_t p)
@@ -2471,7 +2527,7 @@ void clean_session(pid_t p)
 
 void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
 					char *userfile, char *outfile, int solution_id, int lang,
-					int &topmemory, int mem_lmt, int &usedtime, int time_lmt, int &p_id,
+					int &topmemory, int mem_lmt, int &usedtime, double time_lmt, int &p_id,
 					int &PEflg, char *work_dir)
 {
 	// parent
@@ -2562,7 +2618,7 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
 				case SIGALRM:
 					alarm(0);
 					if (DEBUG)
-						printf("alarm:%d\n", time_lmt);
+						printf("alarm:%g\n", time_lmt);
 				case SIGKILL:
 				case SIGXCPU:
 					ACflg = OJ_TL;
@@ -2576,7 +2632,7 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
 				default:
 					ACflg = OJ_RE;
 				}
-				print_runtimeerror(strsignal(exitcode));
+				print_runtimeerror(infile+strlen(oj_home)+5,strsignal(exitcode));
 			}
 			ptrace(PTRACE_KILL, pidApp, NULL, NULL);
 
@@ -2616,7 +2672,7 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
 				default:
 					ACflg = OJ_RE;
 				}
-				print_runtimeerror(strsignal(sig));
+				print_runtimeerror(infile+strlen(oj_home)+5,strsignal(sig));
 			}
 			break;
 		}
@@ -2627,13 +2683,38 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
 		 */
 
 		// check the system calls
-		ptrace(PTRACE_GETREGS, pidApp, NULL, &reg);
+	if (!use_ptrace){
+		ptrace(PTRACE_SYSCALL, pidApp, NULL, NULL);
+		continue;
+		
+	}
 #ifdef __mips__
 //		if(exitcode!=5&&exitcode!=133){
 	//https://github.com/strace/strace/blob/master/linux/mips/syscallent-n32.h#L344
+		call_id=ptrace(PTRACE_GETREGS, pidApp, NULL, &reg);
 		   if((unsigned int)reg.REG_SYSCALL<6500){  
 #endif
+#ifdef __arm__
+		call_id=ptrace(PTRACE_GETREGS, pidApp, NULL, &reg);
 			call_id = ((unsigned int)reg.REG_SYSCALL) % call_array_size;
+#endif
+#ifdef __aarch64__
+		call_id=ptrace(PTRACE_GETREGS, pidApp, (void *)NT_ARM_SYSTEM_CALL, &reg);
+		print_arm_regs(reg.regs);
+		printf("return call_id:%d\n",call_id);
+		call_id = ((unsigned int)reg.REG_SYSCALL) % call_array_size;
+		printf("regist call_id:%d\n",call_id);
+#endif
+#ifdef __i386__
+		call_id=ptrace(PTRACE_GETREGS, pidApp, NULL, &reg);
+			call_id = ((unsigned int)reg.REG_SYSCALL) % call_array_size;
+#endif 
+#ifdef __x86_64__
+		call_id=ptrace(PTRACE_GETREGS, pidApp, NULL, &reg);
+			call_id = ((unsigned int)reg.REG_SYSCALL) % call_array_size;
+#endif 
+			
+
 			if (record_call)
 			{
 				printf("new call id:%d\n",call_id);
@@ -2656,7 +2737,7 @@ void watch_solution(pid_t pidApp, char *infile, int &ACflg, int isspj,
 						solution_id, call_id,exitcode);
 
 				write_log(error);
-				print_runtimeerror(error);
+				print_runtimeerror(infile+strlen(oj_home)+5,error);
 				ptrace(PTRACE_KILL, pidApp, NULL, NULL);
 			}
 #ifdef __mips__
@@ -2873,7 +2954,8 @@ int main(int argc, char **argv)
 	char user_id[BUFFER_SIZE];
 	int solution_id = 1000;
 	int runner_id = 0;
-	int p_id, time_lmt, mem_lmt, lang, isspj, sim, sim_s_id, max_case_time = 0,cid=0;
+	int p_id,  mem_lmt, lang, isspj, sim, sim_s_id, max_case_time = 0,cid=0;
+	double time_lmt;
 	char time_space_table[BUFFER_SIZE*100];
 	int time_space_index=0;
 
@@ -2890,10 +2972,14 @@ int main(int argc, char **argv)
 	//set work directory to start running & judging
 	sprintf(work_dir, "%s/run%s/", oj_home, argv[2]);
 
-	clean_workdir(work_dir);
-	if (shm_run)
+	if (shm_run){
 		mk_shm_workdir(work_dir);
-
+	}else{
+		execute_cmd("mkdir %s",work_dir);
+	}
+	
+	clean_workdir(work_dir);
+	
 	chdir(work_dir);
 
 	if (http_judge)
@@ -2931,13 +3017,13 @@ int main(int argc, char **argv)
 	}
 
 	//never bigger than judged set value;
-	if (time_lmt > 300 || time_lmt < 1)
-		time_lmt = 300;
+	if (time_lmt > 300 || time_lmt < 0)
+		time_lmt = 1;
 	if (mem_lmt > 1024 || mem_lmt < 1)
 		mem_lmt = 1024;
 
 	if (DEBUG)
-		printf("time: %d mem: %d\n", time_lmt, mem_lmt);
+		printf("time: %g mem: %d\n", time_lmt, mem_lmt);
 
 	// compile
 	//      printf("%s\n",cmd);
@@ -3043,10 +3129,6 @@ int main(int argc, char **argv)
 						   solution_id, lang, topmemory, mem_lmt, usedtime, time_lmt,
 						   p_id, PEflg, work_dir);
 		}
-		if (finalACflg == OJ_TL)
-		{
-			usedtime = time_lmt * 1000;
-		}
 		if (ACflg == OJ_RE)
 		{
 			if (DEBUG)
@@ -3079,7 +3161,7 @@ int main(int argc, char **argv)
 			//out file does not exist
 			char error[BUFFER_SIZE];
 			sprintf(error, "missing out file %s, report to system administrator!\n", outfile);
-			print_runtimeerror(error);
+			print_runtimeerror(infile+strlen(oj_home)+5,error);
 			ACflg = OJ_RE;
 		}
 
@@ -3101,17 +3183,18 @@ int main(int argc, char **argv)
 						   solution_id, lang, topmemory, mem_lmt, usedtime, time_lmt,
 						   p_id, PEflg, work_dir);
 			printf("%s: mem=%d time=%d\n",infile+strlen(oj_home)+5,topmemory,usedtime);	
-			time_space_index+=sprintf(time_space_table+time_space_index,"%s: mem=%dk time=%dms\n",infile+strlen(oj_home)+5,topmemory/1024,usedtime);	
-
+			total_time+=usedtime;
+			printf("time:%d/%d\n",usedtime,total_time);
 			judge_solution(ACflg, usedtime, time_lmt, isspj, p_id, infile,
 						   outfile, userfile, PEflg, lang, work_dir, topmemory,
 						   mem_lmt, solution_id, num_of_test);
+			time_space_index+=sprintf(time_space_table+time_space_index,"%s:%s mem=%dk time=%dms\n",infile+strlen(oj_home)+5,jresult[ACflg],topmemory/1024,usedtime);
 			if (use_max_time)
 			{
 				max_case_time =
 					usedtime > max_case_time ? usedtime : max_case_time;
-				usedtime = 0;
 			}
+				usedtime = 0;
 			//clean_session(pidApp);
 		}
 		if (oi_mode)
@@ -3148,13 +3231,11 @@ int main(int argc, char **argv)
 	}
 	if (use_max_time)
 	{
+		if(DEBUG) printf("use max case time:%d\n",max_case_time);
 		usedtime = max_case_time;
-	}
-	if (finalACflg == OJ_TL)
-	{
-		usedtime = time_lmt * 1000;
-		if (DEBUG)
-			printf("usedtime:%d\n", usedtime);
+	}else{
+		if(DEBUG) printf("use total time:%d\n",total_time);
+		usedtime = total_time;
 	}
 	if (oi_mode)
 	{

@@ -44,7 +44,7 @@ sed -i "s/DB_PASS=\"root\"/DB_PASS=\"$PASSWORD\"/g" src/web/include/db_info.inc.
 chmod 700 src/web/include/db_info.inc.php
 chown -R www-data src/web/
 chown www-data src/web/upload data
-if grep client_max_body_size /etc/nginx/nginx.conf ; then 
+if grep "client_max_body_size" /etc/nginx/nginx.conf ; then 
 	echo "client_max_body_size already added" ;
 else
 	sed -i "s:include /etc/nginx/mime.types;:client_max_body_size    80m;\n\tinclude /etc/nginx/mime.types;:g" /etc/nginx/nginx.conf
@@ -61,13 +61,14 @@ else
 	sed -i "s:#location ~ \\\.php\\$:location ~ \\\.php\\$:g" /etc/nginx/sites-enabled/default
 	sed -i "s:#\tinclude snippets:\tinclude snippets:g" /etc/nginx/sites-enabled/default
 	sed -i "s|#\tfastcgi_pass unix|\tfastcgi_pass unix|g" /etc/nginx/sites-enabled/default
-	sed -i "s:}#added_by_hustoj::g" /etc/nginx/sites-enabled/default
+	sed -i "s:}#added by hustoj::g" /etc/nginx/sites-enabled/default
 	sed -i "s|# deny access to .htaccess files|}#added by hustoj\n\n\n\t# deny access to .htaccess files|g" /etc/nginx/sites-enabled/default
 fi
 /etc/init.d/nginx restart
 sed -i "s/post_max_size = 8M/post_max_size = 80M/g" /etc/php/7.0/fpm/php.ini
 sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 80M/g" /etc/php/7.0/fpm/php.ini
 sed -i 's/;request_terminate_timeout = 0/request_terminate_timeout = 128/g' `find /etc/php -name www.conf`
+sed -i 's/pm.max_children = 5/pm.max_children = 200/g' `find /etc/php -name www.conf`
 
 COMPENSATION=`grep 'mips' /proc/cpuinfo|head -1|awk -F: '{printf("%.2f",$2/5000)}'`
 sed -i "s/OJ_CPU_COMPENSATION=1.0/OJ_CPU_COMPENSATION=$COMPENSATION/g" etc/judge.conf
@@ -88,7 +89,7 @@ fi
 if grep "bak.sh" /var/spool/cron/crontabs/root ; then
 	echo "auto backup added!"
 else
-	echo "1 0 * * * /home/judge/src/install/bak.sh" >> /var/spool/cron/crontabs/root
+	crontab -l > conf && echo "1 0 * * * /home/judge/src/install/bak.sh" >> conf && crontab conf && rm -f conf
 fi
 ln -s /usr/bin/mcs /usr/bin/gmcs
 

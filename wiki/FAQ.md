@@ -10,6 +10,90 @@ When people asked question, we put the answer here
 新版本
 ----
 
+如何启用查重机制？
+--
+修改/home/judge/etc/judge.conf，设置
+```
+OJ_SIM_ENABLE=1
+```
+修改/home/judge/src/web/include/db_info.inc.php，设置
+```
+$OJ_SIM=true;
+```
+* 抄袭只对不同账号间生效，自己抄袭自己不计。拥有Source_browser权限的账号可以看到具体数值和对比。
+
+不能访问github，国内网，如何通过gitee安装？
+--
+```
+wget https://gitee.com/zhblue/hustoj/raw/master/trunk/install/install-ubuntu18-gitee.sh
+sudo bash install-ubuntu18-gitee.sh
+```
+
+
+请问如何重启判题机？
+--
+```
+sudo pkill -9 judged
+sudo judged
+```
+
+XXXXX 这个文件是在哪的
+--
+```
+   sudo find /home/judge -name "XXXXX"
+```
+
+
+数据库账号密码是什么，如何登陆mysql?
+--
+数据库账号密码存放在两个配置文件中：
+```
+/home/judge/etc/judge.conf
+/home/judge/src/web/include/db_info.inc.php
+```
+新版本中，快速登陆mysql的脚本在install目录里，名字为mysql.sh
+使用方法
+```
+sudo bash /home/judge/src/install/mysql.sh
+```
+
+
+后台导入问题失败
+--
+
+1、先用谷歌浏览器直接打开xml文件，看是否有语法错误，如果有，用文本编辑器修订提示的行号。
+
+2、如果超过100M,可以先用EasyFPSViewer拆分成多个小文件，然后再导入。
+
+3、对于HUSTOJ，可以先压缩为zip再上传导入
+
+4、修改/etc/php/7.2/fpm/php.ini, 提高post_max_size、upload_max_filesize 、memory_limit、max_execution_time 的值。修改后执行sudo service php7.2-fpm restart生效。
+
+
+
+电脑配置太高，造了很多数据还是没法卡住暴力怎么办？
+--
+修改/home/judge/etc/judge.conf
+```
+OJ_CPU_COMPENSATION=1.0
+```
+增加这个值可以降低CPU的评测速度，安装脚本根据CPU的bogomips值来初始化。
+最高不超过100，设为100可以将原先1ms的测试数据计成100ms。
+
+
+为什么题目不见了/如何让比赛里的题目也可以在练习里做？
+--
+[参考这里](https://github.com/zhblue/hustoj/issues/520)
+
+
+其他主机怎么连接到oj?
+--
+这取决于买的阿里云还是校园网服务器，或者虚拟机：
+阿里云直接用阿里提供的公网ip访问，也可以添加域名解析后用域名访问。
+校园网，用学校提供的内网ip或二级域名访问。
+虚拟机，百度“【虚拟机的名字如virtualbox或vmware】+端口映射” ，把80端口转进去，然后用物理机的ip地址访问。
+
+
 升级后似乎不能提交/判题了？
 --
 这多半意味着数据库结构与预期不一致，可以通过以下方法解决：
@@ -29,7 +113,12 @@ When people asked question, we put the answer here
 * 设置db_info.inc.php中的 $OJ_MARK="mark";   // 非AC的提交结果显示得分而非错误比率
 * 设置db_info.inc.php中的 $OJ_OI_1_SOLUTION_ONLY=true; //比赛是否采用noip中的仅保留最后一次提交的规则。
 * 添加比赛时，比赛标题中包含"NOIP"这个关键词  // 赛后才能看结果
+* "NOIP"这个敏感词在db_info.inc.php中可以修改
 
+随机的CE编译错误
+--
+* 检查OJ_RUNNING的设置与run?目录的对应关系，例如:OJ_RUNNING=2，需要run0 run1两个目录，属主judge，权限700。
+* 有的题目CE有的题目AC，适当放宽judge_client.cc中compile函数里的CPU、内存、文件限制。约1234行前后。修改后需在core目录执行sudo bash make.sh
 
 老版本
 ----
