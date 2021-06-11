@@ -25,7 +25,7 @@ yum -y install subversion
 svn co https://github.com/zhblue/hustoj/trunk/trunk/ src
 cd src/install
 mysql -h localhost -uroot < db.sql
-echo "insert into jol.privilege values('admin','administrator','N');"|mysql -h localhost -uroot
+echo "insert into jol.privilege values('admin','administrator','true','N');"|mysql -h localhost -uroot
 # mysqladmin -u root password $DBPASS
 cd ../../
 
@@ -130,8 +130,8 @@ fi
 cd /home/judge/
 
 # write password at the end of install
-sed -i "s/OJ_PASSWORD=root/OJ_PASSWORD=$DBPASS/g" etc/judge.conf
-sed -i "s/DB_PASS=\"root\"/DB_PASS=\"$DBPASS\"/g" src/web/include/db_info.inc.php
+sed -i "s/OJ_PASSWORD[[:space:]]*=[[:space:]]*root/OJ_PASSWORD=$DBPASS/g" etc/judge.conf
+sed -i "s/DB_PASS[[:space:]]*=[[:space:]]*\"root\"/DB_PASS=\"$DBPASS\"/g" src/web/include/db_info.inc.php
 
 # change database password at the end of install
 mysqladmin -u root password $DBPASS

@@ -1,11 +1,16 @@
 <?php
+ 
+
 	$cache_time=10;
 	$OJ_CACHE_SHARE=false;
 	require_once('./include/cache_start.php');
         require_once('./include/db_info.inc.php');
 	require_once('./include/setlang.php');
 	$view_title= "Welcome To Online Judge";
-	
+	if (!isset($_SESSION[$OJ_NAME.'_'.'user_id'])) {
+		  header("location:loginpage.php");
+		   exit(0);
+	 }
 require_once("./include/const.inc.php");
 if (!isset($_GET['sid'])){
 	$view_errors= "No such code!\n";

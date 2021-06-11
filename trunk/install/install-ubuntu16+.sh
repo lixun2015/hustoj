@@ -4,7 +4,12 @@ apt-get install -y subversion
 /usr/sbin/useradd -m -u 1536 judge
 cd /home/judge/
 
-svn co https://github.com/zhblue/hustoj/trunk/trunk/  src
+#using tgz src files
+wget -O hustoj.tar.gz http://dl.hustoj.com/hustoj.tar.gz
+tar xzf hustoj.tar.gz
+svn up src
+#svn co https://github.com/zhblue/hustoj/trunk/trunk/  src
+
 apt-get install -y make flex g++ clang libmysqlclient-dev libmysql++-dev php-fpm php-common php-xml-parser nginx mysql-server php-mysql php-gd php-zip fp-compiler openjdk-8-jdk mono-devel php-mbstring php-xml
 apt-get install -y php-memcache memcached
 USER=`cat /etc/mysql/debian.cnf |grep user|head -1|awk  '{print $3}'`
@@ -30,8 +35,8 @@ sed -i "s/OJ_RUNNING=1/OJ_RUNNING=$CPU/g" etc/judge.conf
 chmod 700 backup
 chmod 700 etc/judge.conf
 
-sed -i "s/DB_USER=\"root\"/DB_USER=\"$USER\"/g" src/web/include/db_info.inc.php
-sed -i "s/DB_PASS=\"root\"/DB_PASS=\"$PASSWORD\"/g" src/web/include/db_info.inc.php
+sed -i "s/DB_USER[[:space:]]*=[[:space:]]*\"root\"/DB_USER=\"$USER\"/g" src/web/include/db_info.inc.php
+sed -i "s/DB_PASS[[:space:]]*=[[:space:]]*\"root\"/DB_PASS=\"$PASSWORD\"/g" src/web/include/db_info.inc.php
 chmod 700 src/web/include/db_info.inc.php
 chown -R www-data src/web/
 chown www-data src/web/upload data 
@@ -42,7 +47,7 @@ else
 fi
 
 mysql -h localhost -u$USER -p$PASSWORD < src/install/db.sql
-echo "insert into jol.privilege values('admin','administrator','N');"|mysql -h localhost -u$USER -p$PASSWORD 
+echo "insert into jol.privilege values('admin','administrator','true','N');"|mysql -h localhost -u$USER -p$PASSWORD 
 
 if grep "added by hustoj" /etc/nginx/sites-enabled/default ; then
 	echo "default site modified!"
@@ -53,7 +58,9 @@ else
 	sed -i "s:#\tinclude snippets:\tinclude snippets:g" /etc/nginx/sites-enabled/default
 	sed -i "s|#\tfastcgi_pass unix|\tfastcgi_pass unix|g" /etc/nginx/sites-enabled/default
 	sed -i "s:}#added by hustoj::g" /etc/nginx/sites-enabled/default
-	sed -i "s:php7.0:php7.2:g" /etc/nginx/sites-enabled/default
+	if [ -f "/run/php/php7.2-fpm.sock" ]; then
+  		sed -i "s:php7.0:php7.2:g" /etc/nginx/sites-enabled/default
+	fi
 	sed -i "s|# deny access to .htaccess files|}#added by hustoj\n\n\n\t# deny access to .htaccess files|g" /etc/nginx/sites-enabled/default
 fi
 /etc/init.d/nginx restart

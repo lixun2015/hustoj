@@ -19,14 +19,33 @@
     <script src="http://cdn.bootcss.com/html5shiv/3.7.0/html5shiv.js"></script>
     <script src="http://cdn.bootcss.com/respond.js/1.4.2/respond.min.js"></script>
   <![endif]-->
+<?php if (isset($OJ_MATHJAX)&&$OJ_MATHJAX){?>
+    <!--以下为了加载公式的使用而既加入-->
+<script>
+  MathJax = {
+    tex: {inlineMath: [['$', '$'], ['\\(', '\\)']]}
+  };
+</script> 
+
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+	.jumbotron1{ 
+  font-size: 18px; 
+}
+</style>
+
+<?php } ?>
+
+<!--数学公式js加载完毕-->
 </head>
+
 
 <body>
 	<div class="container">
 		<?php include("template/$OJ_TEMPLATE/nav.php");?>
 
 		<!-- Main component for a primary marketing message or call to action -->
-    <div class="jumbotron"></div>
+    <!-- <div class="jumbotron"></div> -->
 
 		<div class="panel panel-default">
 			<div class="panel-heading">
@@ -47,25 +66,32 @@
 				echo "<span class=green>$MSG_Memory_Limit : </span>" . $row[ 'memory_limit' ] . " MB";
 
 				if ( $row[ 'spj' ] )echo "&nbsp;&nbsp;<span class=red>Special Judge</span>";
-				if(isset($OJ_OI_MODE)&&$OJ_OI_MODE){
-					echo "<br><br>";
-				}else{
-					echo "<br><br>";
+				echo "<br><br>";
+        if($pr_flag){
+					echo "<a class='btn btn-info btn-sm' href='submitpage.php?id=$id' role='button'>$MSG_SUBMIT</a>";
+        }else{
+					echo "<a class='btn btn-info btn-sm' href='submitpage.php?cid=$cid&pid=$pid&langmask=$langmask' role='button'>$MSG_SUBMIT</a>";
+  					echo "<a class='btn btn-primary btn-sm' role='button' href='contest.php?cid=$cid'>$MSG_PROBLEM$MSG_LIST</a>";
+        }
+				if (isset($OJ_OI_MODE)&&$OJ_OI_MODE) {
+				} else {
 					echo "<div class='btn-group' role='group'>";
-  					echo "<a class='btn btn-primary btn-sm' role='button' href=status.php?problem_id=".$row['problem_id']."&jresult=4>$MSG_SOVLED: ".$row['accepted']."</a>";
-  					echo "<a class='btn btn-primary btn-sm' role='button' href=status.php?problem_id=".$row['problem_id'].">$MSG_SUBMIT: ".$row['submit']."</a>";
-  					echo "<a class='btn btn-primary btn-sm' role='button' href=problemstatus.php?id=".$row['problem_id'].">$MSG_STATISTICS</a>";
-	        if(isset($_SESSION[$OJ_NAME.'_'.'administrator']) || isset($_SESSION[$OJ_NAME.'_'.'contest_creator']) || isset($_SESSION[$OJ_NAME.'_'.'problem_editor'])) {
-	        	require_once("include/set_get_key.php");
-  					echo "<a class='btn btn-success btn-sm' role='button' href=admin/problem_edit.php?id=$id&getkey=".$_SESSION[$OJ_NAME.'_'.'getkey'].">EDIT</a>";
-  					echo "<a class='btn btn-success btn-sm' role='button' href=javascript:phpfm(".$row['problem_id'].")>TESTDATA</a>";
-					}
-					echo "</div>";
+  				echo "<a class='btn btn-primary btn-sm' role='button' href=status.php?problem_id=".$row['problem_id']."&jresult=4>$MSG_SOVLED: ".$row['accepted']."</a>";
+  				echo "<a class='btn btn-primary btn-sm' role='button' href=status.php?problem_id=".$row['problem_id'].">$MSG_SUBMIT_NUM: ".$row['submit']."</a>";
+  				echo "<a class='btn btn-primary btn-sm' role='button' href=problemstatus.php?id=".$row['problem_id'].">$MSG_STATISTICS</a>";
 				}
 
+	      if (isset($_SESSION[$OJ_NAME.'_'.'administrator']) || isset($_SESSION[$OJ_NAME.'_'.'contest_creator']) || isset($_SESSION[$OJ_NAME.'_'.'problem_editor'])) {
+        	require_once("include/set_get_key.php");
+ 					echo "<a class='btn btn-success btn-sm' role='button' href=admin/problem_edit.php?id=$id&getkey=".$_SESSION[$OJ_NAME.'_'.'getkey'].">EDIT</a>";
+ 					echo "<a class='btn btn-success btn-sm' role='button' href=javascript:phpfm(".$row['problem_id'].")>TESTDATA</a>";
+				}
+
+				echo "</div>";
 				echo "</center>";
 				# end of head
 				echo "</div>";
+
 				echo "<!--StartMarkForVirtualJudge-->";
 				?>
 
@@ -201,8 +227,7 @@
 			$.post( "admin/phpfm.php", {
 				'frame': 3,
 				'pid': pid,
-				'pass': '',
-				'csrf': '<?php echo $token?>'
+				'pass': ''
 			}, function ( data, status ) {
 				if ( status == "success" ) {
 					document.location.href = "admin/phpfm.php?frame=3&pid=" + pid;

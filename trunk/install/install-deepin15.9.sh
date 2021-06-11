@@ -4,8 +4,12 @@ apt-get install -y subversion
 /usr/sbin/useradd -m -u 1536 judge
 cd /home/judge/
 
-svn co https://github.com/zhblue/hustoj/trunk/trunk/  src
-for PKG in make flex g++ clang libmariadb++-dev php-fpm nginx mysql-server php-mysql  php-common php-gd php-zip fp-compiler openjdk-8-jdk mono-devel php-mbstring php-xml
+#using tgz src files
+wget -O hustoj.tar.gz http://dl.hustoj.com/hustoj.tar.gz
+tar xzf hustoj.tar.gz
+svn up src
+#svn co https://github.com/zhblue/hustoj/trunk/trunk/ src
+for PKG in make flex g++ clang libmariadb++-dev php-fpm nginx mariadb-server php-mysql  php-common php-gd php-zip fp-compiler openjdk-8-jdk mono-devel php-mbstring php-xml
 do
    apt-get install -y $PKG 
 done
@@ -34,8 +38,8 @@ sed -i "s/OJ_RUNNING=1/OJ_RUNNING=$CPU/g" etc/judge.conf
 chmod 700 backup
 chmod 700 etc/judge.conf
 
-sed -i "s/DB_USER=\"root\"/DB_USER=\"$USER\"/g" src/web/include/db_info.inc.php
-sed -i "s/DB_PASS=\"root\"/DB_PASS=\"$PASSWORD\"/g" src/web/include/db_info.inc.php
+sed -i "s/DB_USER[[:space:]]*=[[:space:]]*\"root\"/DB_USER=\"$USER\"/g" src/web/include/db_info.inc.php
+sed -i "s/DB_PASS[[:space:]]*=[[:space:]]*\"root\"/DB_PASS=\"$PASSWORD\"/g" src/web/include/db_info.inc.php
 chmod 700 src/web/include/db_info.inc.php
 chown www-data src/web/include/db_info.inc.php
 chown www-data src/web/upload data
@@ -47,7 +51,7 @@ fi
 
 mysql < src/install/db.sql
 echo "grant all privileges on jol.* to '$USER' identified by '$PASSWORD';\n flush privileges;\n"|mysql
-echo "insert into jol.privilege values('admin','administrator','N');"|mysql -h localhost -u$USER -p$PASSWORD 
+echo "insert into jol.privilege values('admin','administrator','true','N');"|mysql -h localhost -u$USER -p$PASSWORD 
 if grep "added by hustoj" /etc/nginx/sites-enabled/default ; then
 	echo "hustoj nginx config added!"
 else

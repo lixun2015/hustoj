@@ -60,11 +60,14 @@
   </tr>
 </table>
 <p>  编译器版本为（系统可能升级编译器版本，这里仅供参考）:<br>
-  <font color=blue>gcc version 4.8.4 (Ubuntu 4.8.4-2ubuntu1~14.04.3)</font><br>
-  <font color=blue>glibc 2.19</font><br>
-<font color=blue>Free Pascal Compiler version 2.6.2<br>
-openjdk 1.7.0_151<br>
-</font></p>
+	
+<font color=blue>Gcc version 9.3.0 (Ubuntu 9.3.0-17ubuntu1~20.04)</font><br>
+<font color=blue>Glibc 2.31-0ubuntu9.2</font><br>
+<font color=blue>Free Pascal Compiler version 3.0.4+dfsg-23 [2019/11/25] for x86_64</font><br>
+<font color=blue>Openjdk "14.0.2"</font><br>
+<font color=blue>Python 3.8.5</font><br>
+	      </p>
+	      
 <hr>
 <p><font color=green>Q</font>:程序怎样取得输入、进行输出?<br>
   <font color=red>A</font>:你的程序应该从标准输入 stdin('Standard Input')获取输入，并将结果输出到标准输出 stdout('Standard Output').例如,在C语言可以使用 'scanf' ，在C++可以使用'cin' 进行输入；在C使用 'printf' ，在C++使用'cout'进行输出.</p>
@@ -121,7 +124,16 @@ public class Main{
 		}
 	}
 }</font></pre>
-
+Python3<br>
+<pre>import io
+import sys
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer,encoding='utf8')
+for line in sys.stdin:
+    a = line.split()
+    print(int(a[0]) + int(a[1]))
+</pre>
+	      
+	
 <hr>
 <font color=green>Q</font>:为什么我的程序在自己的电脑上正常编译，而系统告诉我编译错误!<br>
 <font color=red>A</font>:GCC的编译标准与VC6有些不同，更加符合c/c++标准:<br>

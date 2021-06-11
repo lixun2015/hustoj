@@ -8,7 +8,9 @@ if (!(isset($_SESSION[$OJ_NAME.'_'.'administrator'])
 	echo "<a href='../loginpage.php'>Please Login First!</a>";
 	exit(1);
 }
-
+// this is not a webshell , and it need administrator / problem editor  membership to use, 
+// if aliyun warn you about this file , don't panic   
+// 这不是后门(Webshell)文件，不要理会阿里云的误报。
     $charset = "UTF-8";
     //@setlocale(LC_CTYPE, 'C');
     header("Pragma: no-cache");
@@ -88,7 +90,7 @@ if (!(isset($_SESSION[$OJ_NAME.'_'.'administrator'])
     if (!isset($current_dir)){
         $current_dir = $path_info["dirname"]."/";
         if (!$islinux) $current_dir = ucfirst($current_dir);
-        //@chmod($current_dir,0755);
+        //@chmod($current_dir,0711);
     } else $current_dir = format_path($current_dir);
     // Auto Expand Local Path
     if (!isset($expanded_dir_list)){
@@ -2297,7 +2299,7 @@ function total_size($arg) {
 }
 function total_delete($arg) {
     if (file_exists($arg)) {
-        @chmod($arg,0755);
+        @chmod($arg,0711);
         if (is_dir($arg)) {
             $handle = opendir($arg);
             while($aux = readdir($handle)) {
@@ -2312,7 +2314,7 @@ function total_copy($orig,$dest) {
     $ok = true;
     if (file_exists($orig)) {
         if (is_dir($orig)) {
-            mkdir($dest,0755);
+            mkdir($dest,0711);
             $handle = opendir($orig);
             while(($aux = readdir($handle))&&($ok)) {
                 if ($aux != "." && $aux != "..") $ok = total_copy($orig."/".$aux,$dest."/".$aux);
@@ -2369,13 +2371,13 @@ function save_upload($temp_file,$filename,$dir_dest) {
             if (file_exists($file)){
                 if (unlink($file)){
                     if (copy($temp_file,$file)){
-                        @chmod($file,0755);
+                        @chmod($file,0711);
                         $out = 6;
                     } else $out = 2;
                 } else $out = 5;
             } else {
                 if (copy($temp_file,$file)){
-                    @chmod($file,0755);
+                    @chmod($file,0711);
                     $out = 1;
                 } else $out = 2;
             }
@@ -2398,7 +2400,7 @@ function zip_extract(){
                 foreach(explode('/',$complete_path) AS $k) {
                     $tmp .= $k.'/';
                     if(!file_exists($tmp)) {
-                        @mkdir($current_dir.$tmp, 0755);
+                        @mkdir($current_dir.$tmp, 0711);
                     }
                 }
             }
@@ -3432,13 +3434,9 @@ function dir_list_form() {
                     <input type=\"button\" style=\"width:80\" onclick=\"selectANI(this)\" id=\"ANI0\" value=\"".et('SelAll')."\">
                     <input type=\"button\" style=\"width:80\" onclick=\"selectANI(this)\" value=\"".et('SelInverse')."\">
                     <input type=\"button\" style=\"width:80\" onclick=\"test(4)\" value=\"".et('Rem')."\">
-                 <!--   <input type=\"button\" style=\"width:80\" onclick=\"sel_dir(5)\" value=\"".et('Copy')."\">
-                    <input type=\"button\" style=\"width:80\" onclick=\"sel_dir(6)\" value=\"".et('Move')."\">   -->
                     <input type=\"button\" style=\"width:100\" onclick=\"test_prompt(71)\" value=\"".et('Compress')."\">";
             if ($islinux) $out .= "
                     <input type=\"button\" style=\"width:100\" onclick=\"resolveIDs()\" value=\"".et('ResolveIDs')."\">";
-            $out .= "
-                    <input type=\"button\" style=\"width:100\" onclick=\"chmod_form()\" value=\"".et('Perms')."\">";
             $out .= "
                 </nobr></td>
                 </tr>
@@ -3566,13 +3564,9 @@ function dir_list_form() {
                       <input type=\"button\" style=\"width:80\" onclick=\"selectANI(this)\" id=\"ANI1\" value=\"".et('SelAll')."\">
                       <input type=\"button\" style=\"width:80\" onclick=\"selectANI(this)\" value=\"".et('SelInverse')."\">
                       <input type=\"button\" style=\"width:80\" onclick=\"test(4)\" value=\"".et('Rem')."\">
-                      <input type=\"button\" style=\"width:80\" onclick=\"sel_dir(5)\" value=\"".et('Copy')."\">
-                      <input type=\"button\" style=\"width:80\" onclick=\"sel_dir(6)\" value=\"".et('Move')."\">
                       <input type=\"button\" style=\"width:100\" onclick=\"test_prompt(71)\" value=\"".et('Compress')."\">";
             if ($islinux) $out .= "
                       <input type=\"button\" style=\"width:100\" onclick=\"resolveIDs()\" value=\"".et('ResolveIDs')."\">";
-            $out .= "
-                      <input type=\"button\" style=\"width:100\" onclick=\"chmod_form()\" value=\"".et('Perms')."\">";
             $out .= "
                 </nobr></td>
                 </tr>";
@@ -3803,7 +3797,7 @@ function chmod_form(){
     <TABLE BORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"4\" ALIGN=CENTER>
     <tr><th colspan=4>".et('Perms')."</th></tr>
     <TR ALIGN=\"LEFT\" VALIGN=\"MIDDLE\">
-    <TD><input type=\"text\" name=\"t_total\" value=\"0755\" size=\"4\" onKeyUp=\"octalchange()\"> </TD>
+    <TD><input type=\"text\" name=\"t_total\" value=\"0711\" size=\"4\" onKeyUp=\"octalchange()\"> </TD>
     <TD><input type=\"text\" name=\"sym_total\" value=\"\" size=\"12\" READONLY=\"1\"></TD>
     </TR>
     </TABLE>
@@ -4394,8 +4388,8 @@ function frame3(){
             if (strlen($cmd_arg)){
                 $cmd_arg = format_path($current_dir.$cmd_arg);
                 if (!file_exists($cmd_arg)){
-                  //  @mkdir($cmd_arg,0755);
-                    @chmod($cmd_arg,0755);
+                  //  @mkdir($cmd_arg,0711);
+                    @chmod($cmd_arg,0711);
                     reloadframe("parent",2,"&ec_dir=".$cmd_arg);
                 } else alert(et('FileDirExists').".");
             }
@@ -5141,7 +5135,7 @@ class tar_file extends archive
                     {
                         if(!is_dir($file['name']))
                         {
-                            mkdir($file['name'],0755);
+                            mkdir($file['name'],0711);
                             //mkdir($file['name'],$file['stat'][2]);
                             //chown($file['name'],$file['stat'][4]);
                             //chgrp($file['name'],$file['stat'][5]);

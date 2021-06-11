@@ -27,10 +27,16 @@ systemctl start mariadb.service
 /usr/sbin/useradd -m -u 1536 judge
 cd /home/judge/
 yum -y install subversion
-svn co https://github.com/zhblue/hustoj/trunk/trunk/ src
+
+#using tgz src files
+wget -O hustoj.tar.gz http://dl.hustoj.com/hustoj.tar.gz
+tar xzf hustoj.tar.gz
+svn up src
+
+#svn co https://github.com/zhblue/hustoj/trunk/trunk/ src
 cd src/install
 mysql -h localhost -uroot < db.sql
-echo "insert into jol.privilege values('admin','administrator','N');"|mysql -h localhost -uroot
+echo "insert into jol.privilege values('admin','administrator','true','N');"|mysql -h localhost -uroot
 # mysqladmin -u root password $DBPASS
 cd ../../
 
@@ -136,10 +142,13 @@ cd /home/judge/
 
 # write password at the end of install
 sed -i "s/OJ_PASSWORD=root/OJ_PASSWORD=$DBPASS/g" etc/judge.conf
-sed -i "s/DB_PASS=\"root\"/DB_PASS=\"$DBPASS\"/g" src/web/include/db_info.inc.php
+sed -i "s/DB_PASS[[:space:]]*=[[:space:]]*\"root\"/DB_PASS=\"$DBPASS\"/g" src/web/include/db_info.inc.php
 
 # change database password at the end of install
 mysqladmin -u root password $DBPASS
+
+mkdir /var/log/hustoj/
+chown apache -R /var/log/hustoj/
 
 # mono install for c# 
 yum -y install yum-utils

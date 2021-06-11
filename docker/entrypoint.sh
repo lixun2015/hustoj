@@ -21,6 +21,7 @@ chmod -R 700 /volume/web/include/
 chown -R www-data:www-data /volume/data 
 chown -R www-data:www-data /volume/web  
 chown -R mysql:mysql       /volume/mysql   
+chown -R www-data:www-data /var/log/hustoj
 rm -rf /home/judge/backup   
 rm -rf /home/judge/data 
 rm -rf /home/judge/etc  
@@ -40,7 +41,9 @@ for i in `seq 1 $RUNNING`; do
 done 
 
 regexp=`cat /home/judge/src/web/template/bs3/js.php | grep http://hustoj.com/wx.jpg | grep http://hustoj.com/alipay.png`;
-sed -i "s#$regexp##g" /home/judge/src/web/template/bs3/js.php
+if [ ! -z $regexp ];then
+    sed -i "s#$regexp##g" /home/judge/src/web/template/bs3/js.php
+fi
 
 ln -sf /dev/stdout /var/log/nginx/access.log
 ln -sf /dev/stderr /var/log/nginx/error.log

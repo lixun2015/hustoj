@@ -83,7 +83,7 @@
 
       <div class="btn-group">
         <a href="contest.php?cid=<?php echo $cid?>" class="btn btn-primary btn-sm"><?php echo $MSG_PROBLEMS?></a>
-        <a href="status.php?cid=<?php echo $view_cid?>" class="btn btn-primary btn-sm"><?php echo $MSG_MY_SUBMISSIONS?></a>
+        <a href="status.php?cid=<?php echo $view_cid?>" class="btn btn-primary btn-sm"><?php echo $MSG_SUBMIT?></a>
         <a href="contestrank.php?cid=<?php echo $view_cid?>" class="btn btn-primary btn-sm"><?php echo $MSG_STANDING?></a>
         <a href="contestrank-oi.php?cid=<?php echo $view_cid?>" class="btn btn-primary btn-sm"><?php echo "OI".$MSG_STANDING?></a>
         <a href="conteststatistics.php?cid=<?php echo $view_cid?>" class="btn btn-primary btn-sm"><?php echo $MSG_STATISTICS?></a>
@@ -94,25 +94,26 @@
         <?php } ?>
       </div>
     </div>
-	  </center>
+    </center>
 
-	  <br>
+    <br>
 
-		<div>
-			<center>
-				<?php echo $MSG_CONTEST_SUSPECT1?>
-				<table width=90% border=1 style="text-align:center;">
-					<tr>
-						<td>IP address</td>
-            <td colspan=2>Used ID</td>
+    <div>
+      <center>
+        <?php echo $MSG_CONTEST_SUSPECT1?><br><br>
+        <table class="table-hover table-striped text-center" align=center width=90% border=0>
+          <tr>
+            <td>IP address</td>
+            <td>Used ID</td>
+            <td>Trace</td>
             <td>Time</td>
-						<td>IP address count</td>
-					</tr>
+            <td>IP address count</td>
+          </tr>
 
-					<?php
-					foreach ($result1 as $row) {
-						echo "<tr>";
-							echo "<td>".$row['ip']."</td>";
+          <?php
+          foreach ($result1 as $row) {
+            echo "<tr>";
+              echo "<td>".$row['ip']."</td>";
               echo "<td>".$row['user_id']."</td>";
               echo "<td>";
                 echo "<a href='../userinfo.php?user=".$row['user_id']."'><sub>".$MSG_USERINFO."</sub></a> <sub>/</sub> ";
@@ -120,46 +121,47 @@
               echo "</td>";
               echo "<td>".$row['in_date'];
               echo "<td>".$row['c']."</td>";
-						echo "</tr>";
-					}
-					?>
+            echo "</tr>";
+          }
+          ?>
 
-				</table>
-			</center>
-		</div>
+        </table>
+      </center>
+    </div>
 
-		<br><br>
+    <br><br>
 
-		<div>
-			<center>
-				<?php echo $MSG_CONTEST_SUSPECT2?>
-				<table width=90% border=1 style="text-align:center;">
-					<tr>
-						<td colspan=2>User ID</td>
+    <div>
+      <center>
+        <?php echo $MSG_CONTEST_SUSPECT2?><br><br>
+        <table class="table-hover table-striped text-center" align=center width=90% border=0>
+          <tr>
+            <td>Used ID</td>
+            <td>Trace</td>
             <td>Used IP address</td>
             <td>Time</td>
-						<td>IP address count</td>
-					</tr>
+            <td>IP address count</td>
+          </tr>
 
-					<?php
-					foreach ($result2 as $row) {
-						echo "<tr>";
-							echo "<td>".$row['user_id']."</td>";
-							echo "<td>";
-								echo "<a href='../userinfo.php?user=".$row['user_id']."'><sub>".$MSG_USERINFO."</sub></a> <sub>/</sub> ";
-								echo "<a href='../status.php?cid=$contest_id&user_id=".$row['user_id']."'><sub>".$MSG_CONTEST." ".$MSG_SUBMIT."</sub></a>";
-							echo "</td>";
+          <?php
+          foreach ($result2 as $row) {
+            echo "<tr>";
+              echo "<td>".$row['user_id']."</td>";
+              echo "<td>";
+                echo "<a href='../userinfo.php?user=".$row['user_id']."'><sub>".$MSG_USERINFO."</sub></a> <sub>/</sub> ";
+                echo "<a href='../status.php?cid=$contest_id&user_id=".$row['user_id']."'><sub>".$MSG_CONTEST." ".$MSG_SUBMIT."</sub></a>";
+              echo "</td>";
               echo "<td>".$row['ip'];
-							echo "<td>".$row['time'];
-							echo "<td>".$row['c'];
-							echo "</tr>";
-					}
-					?>
-				</table>
-			</center>
-		</div>
+              echo "<td>".$row['time'];
+              echo "<td>".$row['c'];
+              echo "</tr>";
+          }
+          ?>
+        </table>
+      </center>
+    </div>
 
-	</div>
+  </div>
 
 </div>
 

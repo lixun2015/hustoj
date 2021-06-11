@@ -209,7 +209,7 @@
 
 				<div class="btn-group">
 					<a href="contest.php?cid=<?php echo $cid?>" class="btn btn-primary btn-sm"><?php echo $MSG_PROBLEMS?></a>
-					<a href="status.php?cid=<?php echo $view_cid?>" class="btn btn-primary btn-sm"><?php echo $MSG_MY_SUBMISSIONS?></a>
+					<a href="status.php?cid=<?php echo $view_cid?>" class="btn btn-primary btn-sm"><?php echo $MSG_SUBMIT?></a>
 					<a href="contestrank.php?cid=<?php echo $view_cid?>" class="btn btn-primary btn-sm"><?php echo $MSG_STANDING?></a>
 					<a href="contestrank-oi.php?cid=<?php echo $view_cid?>" class="btn btn-primary btn-sm"><?php echo "OI".$MSG_STANDING?></a>
 					<a href="conteststatistics.php?cid=<?php echo $view_cid?>" class="btn btn-primary btn-sm"><?php echo $MSG_STATISTICS?></a>
@@ -221,37 +221,52 @@
 					</div>
 			</div>
 			</center>
-			<?php }?>
-			<br><br>	
+			<?php } 
+			?>
+			<br>
 			<center>
 				<h4><?php if (isset($locked_msg)) echo $locked_msg;?></h4>
-				<table id=cs width=90%>
+				<table id=cs class="table-hover table-striped" align=center width=90% border=0>
 					<thead>
 						<tr class=toprow>
-							<th><th>AC<th>PE<th>WA<th>TLE<th>MLE<th>OLE<th>RE<th>CE<th><th>TR<th>Total
+							<th class='text-center'></th>
+							<th class='text-center'>AC</th>
+							<th class='text-center'>PE</th>
+							<th class='text-center'>WA</th>
+							<th class='text-center'>TLE</th>
+							<th class='text-center'>MLE</th>
+							<th class='text-center'>OLE</th>
+							<th class='text-center'>RE</th>
+							<th class='text-center'>CE</th>
+							<th class='text-center'>TR</th>
+							<th class='text-center'>|</th>
+							<th class='text-center'>Total</th>
 							<?php 
 							$i = 0;
 							foreach ($language_name as $lang) {
 								if (isset($R[$pid_cnt][$i+11]) )	
-									echo "<th class='center'>$language_name[$i]</th>";
+									echo "<th class='text-center'>$language_name[$i]</th>";
 								else
-									echo "<th>";
+									echo "";//"<th class='text-center'></th>";
 								$i++;
 							}
 							?>
 						</tr>
 					</thead>
+
 					<tbody>
 						<?php
-						for ($i=0;$i<$pid_cnt;$i++){
-							if(!isset($PID[$i])) $PID[$i]="";
-							if ($i&1)
-								echo "<tr align=center class=oddrow><td>";
-							else
-								echo "<tr align=center class=evenrow><td>";
+						for ($i=0; $i<$pid_cnt; $i++) {
+							if(!isset($PID[$i]))
+								$PID[$i] = "";
 
-							if (time() < $end_time) {  //during contest/exam time
-								echo "<a href=problem.php?cid=$cid&pid=$i>$PID[$i]</a>";
+							if ($i&1)
+								echo "<tr class='oddrow'>";
+							else
+								echo "<tr class='evenrow'>";
+
+							if (time()<$end_time) {  //during contest/exam time
+								echo "<td class='text-center'><a href=problem.php?cid=$cid&pid=$i>$PID[$i]</a></td>";
 							}
 							else {  //over contest/exam time
 								//check the problem will be use remained contest/exam
@@ -267,32 +282,48 @@
 								$tresult = pdo_query($sql, $tpid);
 
 								if (intval($tresult) != 0)   //if the problem will be use remained contes/exam */
-									echo "<td>$PID[$i]</td>";
+									echo "<td class='text-center'>$PID[$i]</td>";
 								else
-									echo "<td><a href='problem.php?id=".$tpid."'>".$PID[$i]."</a></td>";
+									echo "<td class='text-center'><a href='problem.php?id=".$tpid."'>".$PID[$i]."</a></td>";
 							}
 
-							for ($j=0;$j<count($language_name)+11;$j++) {
-								if(!isset($R[$i][$j])) $R[$i][$j]="";
-								echo "<td>".$R[$i][$j];
+							for ($j=0; $j<count($language_name)+11; $j++) {
+							 //	if (!isset($R[$i][$j]))
+							 //		$R[$i][$j]="";
+								if ($j<11 || isset($R[$pid_cnt][$j]) )	
+									echo "<td class='text-center'>".$R[$i][$j]."</td>";
 							}
 							echo "</tr>";
 						}
-						echo "<tr align=center class=evenrow><td>Total";
-						for ($j=0;$j<count($language_name)+11;$j++) {
-							if(!isset($R[$i][$j])) $R[$i][$j]="";
-							echo "<td>".$R[$i][$j];
-						}
+
+						echo "<tr class='evenrow'>";
+							echo "<td class='text-center'>Total</td>";
+
+							for ($j=0 ; $j<count($language_name)+ 11; $j++) {
+							//	if(!isset($R[$i][$j]))
+							//		$R[$i][$j]="";
+										
+								if ($j<11 || isset($R[$pid_cnt][$j]) )	
+									echo "<td class='text-center'>".$R[$i][$j]."</td>";
+								
+							}
 						echo "</tr>";
+
 						?>
 					</tbody>
-					<table>
-						<div id=submission style="width:600px;height:300px" ></div>
-					</center>
+				</table>
 
-				</div>
+				<br><br>
+					
+				<table>
+					<div id=submission style="width:600px;height:300px" ></div>
+				</table>
 
-			</div> <!-- /container -->
+			</center>
+
+		</div>
+
+	</div> <!-- /container -->
 
 
 <!-- Bootstrap core JavaScript
